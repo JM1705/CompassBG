@@ -1,18 +1,24 @@
 import compass
+import cbgcfg
 from json import load
 from datetime import datetime
 from ctypes import windll
-from os import listdir, getcwd
+from os import listdir, getcwd, getenv, path
 from random import randint
 from PIL import Image, ImageDraw, ImageFont
 from requests import get
 from re import search
 
-version = 1.0
+version = '2.1.5'
 print('CompassAutoBackground | Version: '+str(version)+'\n')
 
+#Cfg json thing
+appdata = getenv('LOCALAPPDATA') + '\CompassBG'
+if not path.exists(appdata):
+    cbgcfg.cfgCreate(appdata)
+    
 # Get information from cfg file
-with open('cfg.json', 'r') as f:
+with open(appdata + '\cfg.json', 'r') as f:
     cfg = load(f)
     pwd = cfg['password']
     unm = cfg['username']
@@ -21,7 +27,6 @@ with open('cfg.json', 'r') as f:
     fontsize = cfg['font_size']
     linespace = cfg['line_spacing']
     startpos = cfg['start_position']
-    sendnotif = cfg['send_notification']
     textcolour = cfg['text_colour']
     fontfile = cfg['font_file']
 
@@ -101,15 +106,10 @@ font = ImageFont.truetype(fontfile, fontsize)
 for i in range(len(editText)):
     pos = startpos[0], startpos[1] +linespace * i
     draw.text(pos, editText[i], tuple(textcolour), font=font)
-img.save('tempbg.png')
+img.save(appdata+r'\tempbg.png')
 
 # Set edited image as background
 print('Setting image as background')
-windll.user32.SystemParametersInfoW(20, 0, getcwd()+r'\tempbg.png', 0)
+windll.user32.SystemParametersInfoW(20, 0, appdata+r'\tempbg.png', 0)
 
 print('Success')
-
-if sendnotif:
-    from win10toast import ToastNotifier
-    notif = ToastNotifier()
-    notif.show_toast("CompassAutoBackground.py", "Background set")
