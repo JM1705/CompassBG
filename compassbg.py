@@ -3,20 +3,20 @@ import cbgcfg
 from json import load
 from datetime import datetime
 from ctypes import windll
-from os import listdir, getcwd, getenv, path
+from os import listdir, getenv, path
 from random import randint
 from PIL import Image, ImageDraw, ImageFont
 from requests import get
 from re import search
 
-version = '2.1.5'
-print('CompassAutoBackground | Version: '+str(version)+'\n')
+version = '2.2.0'
+print('CompassBG | Version: '+str(version)+'\n')
 
 #Cfg json thing
 appdata = getenv('LOCALAPPDATA') + '\CompassBG'
-if not path.exists(appdata):
+if not path.exists(appdata+'\cfg.json'):
     cbgcfg.cfgCreate(appdata)
-    
+
 # Get information from cfg file
 with open(appdata + '\cfg.json', 'r') as f:
     cfg = load(f)
