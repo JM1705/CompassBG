@@ -7,12 +7,20 @@ from win32com.client import Dispatch
 
 startup = winshell.startup()
 
+def ynbool(string):
+    if string == 'y':
+        return True
+    else:
+        return False
+
 def cfgCreate(path):
     cfgpath = path + '\cfg.json'
     isExe = False
     if getattr(sys, 'frozen', False):
         isExe = True
         application_path = os.path.dirname(sys.executable)
+        
+    startPath = winshell.startup() + r'\compassbgw.lnk'
     
     print("Welcome to the CompassBG setup assistant")
     print("More advanced settings can be accessed by opening the configuration file in Appdata")
@@ -20,7 +28,8 @@ def cfgCreate(path):
     
     bgpath = input("Full background folder path (string):")
     size = int(input("Horizontal resolution (int):")), int(input("Vertical resolution (int):"))
-    autorun = input("Run this script on startup? (Only works with .exe version) (y/n):")
+    highcontrast = ynbool(input("Make font high contrast?"))
+    autorun = ynbool(input("Run this script on startup? (Only works with .exe version) (y/n):"))
     unm = input("Username for Compass (string):")
     pwd = getpass("Password for Compass (string):")
     
@@ -47,14 +56,16 @@ def cfgCreate(path):
         cfg['line_spacing'] = linespace
         cfg['start_position'] = startpos
         cfg['text_colour'] = textcolor
+        cfg['run_on_startup'] = autorun
+        cfg['high_contrast'] = highcontrast
         json.dump(cfg, f, indent = '\t')
         
-    if autorun == "y" and isExe:
-        path = winshell.startup() + r'\compassbgw.lnk'
+    if autorun == True and isExe:
         target = application_path + r'\compassbgw.exe'
         shell = Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut(path)
+        shortcut = shell.CreateShortCut(startPath)
         shortcut.Targetpath = target
         shortcut.save()
-        
-        
+    else:
+        if os.path.exists(startPath):
+            os.remove(startPath)

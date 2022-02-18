@@ -1,34 +1,38 @@
 import compass
-import cbgcfg
+import setup
 from json import load
 from datetime import datetime
 from ctypes import windll
 from os import listdir, getenv, path
 from random import randint
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 from requests import get
 from re import search
 
-version = '2.2.0'
+version = '2.3.0'
 print('CompassBG | Version: '+str(version)+'\n')
 
-#Cfg json thing
+# Create configuration file if it doesn't exist yet
 appdata = getenv('LOCALAPPDATA') + '\CompassBG'
 if not path.exists(appdata+'\cfg.json'):
-    cbgcfg.cfgCreate(appdata)
+    setup.cfgCreate(appdata)
 
 # Get information from cfg file
-with open(appdata + '\cfg.json', 'r') as f:
-    cfg = load(f)
-    pwd = cfg['password']
-    unm = cfg['username']
-    bgpath = cfg['background_path']
-    size = cfg['screen_resolution']
-    fontsize = cfg['font_size']
-    linespace = cfg['line_spacing']
-    startpos = cfg['start_position']
-    textcolour = cfg['text_colour']
-    fontfile = cfg['font_file']
+try:
+    with open(appdata + '\cfg.json', 'r') as f:
+        cfg = load(f)
+        pwd = cfg['password']
+        unm = cfg['username']
+        bgpath = cfg['background_path']
+        size = cfg['screen_resolution']
+        fontsize = cfg['font_size']
+        linespace = cfg['line_spacing']
+        startpos = cfg['start_position']
+        textcolour = cfg['text_colour']
+        fontfile = cfg['font_file']
+        highcontrast = cfg['high_contrast']
+except:
+    raise KeyError('Config file corrupt or outdated, please run ClearData and then run CompassBG again')
 
 # Get time information
 now = datetime.now()
@@ -49,7 +53,13 @@ while not connected:
 
 # Get data from Compass
 print('Getting calender data from Compass')
-c = compass.CompassAPI(unm, pwd)
+try:
+    c = compass.CompassAPI(unm, pwd)
+except KeyError:
+    raise ValueError('Password and username are incorrect, or the config file is corrupt fix the cfg.json file in appdata or run ClearData and then run CompassBG.')
+except:
+    raise ValueError('Compass threw an error, idk what happened lol, try again?')
+    quit()
 events = c.get_calender_events_by_user(todayDate)
 lessons = []
 for i in events:
@@ -97,16 +107,36 @@ sbgpath = bgpath+"\\"+bgs[randint(0, len(bgs)-1)]
 
 # Edit and save background image
 print('Editing background image with text')
-img = Image.open(sbgpath)
-# long step below
-img = img.resize(size, Image.ANTIALIAS)
-# long step below
-draw = ImageDraw.Draw(img)
-font = ImageFont.truetype(fontfile, fontsize)
-for i in range(len(editText)):
-    pos = startpos[0], startpos[1] +linespace * i
-    draw.text(pos, editText[i], tuple(textcolour), font=font)
-img.save(appdata+r'\tempbg.png')
+if highcontrast:
+    # Create alpha channel of text
+    textalpha = Image.new('L', size)
+    draw = ImageDraw.Draw(textalpha)
+    font = ImageFont.truetype(fontfile, fontsize)
+    for i in range(len(editText)):
+        pos = startpos[0], startpos[1] +linespace * i
+        draw.text(pos, editText[i], 255, font=font)
+
+    # Create negative of wallpaper    
+    img = Image.open(sbgpath)
+    img = img.resize(size, Image.ANTIALIAS)
+    negimg = ImageOps.invert(img)
+    negimg.putalpha(textalpha)
+    
+    # Overlay negative on original with alpha channel of text
+    img = img.convert("RGBA")
+    negimg = negimg.convert("RGBA")
+    img = Image.alpha_composite(img, negimg)
+    img.save(appdata+r'\tempbg.png')
+    
+else:
+    img = Image.open(sbgpath)
+    img = img.resize(size, Image.ANTIALIAS)
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(fontfile, fontsize)
+    for i in range(len(editText)):
+        pos = startpos[0], startpos[1] +linespace * i
+        draw.text(pos, editText[i], tuple(textcolour), font=font)
+    img.save(appdata+r'\tempbg.png')
 
 # Set edited image as background
 print('Setting image as background')

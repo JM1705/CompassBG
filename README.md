@@ -5,6 +5,7 @@ Dependencies:
 
 	Windows 10 (11 would probably work as well)
 
+
 Instructions:
 
 Step 1:
@@ -34,3 +35,10 @@ Step 4 (Optional):
 		Task scheduler:
 		Trigger (Begin the task: At log on of any user)
 		Action (Start a program: Program/Script: "C:\Users\me\compassbgw.exe")
+
+
+To remove stored app information and cache:
+	Run cleardata.exe
+
+To create the CompassBG directory manually:
+	Run manualsetup.py
