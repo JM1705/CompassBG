@@ -28,7 +28,7 @@ def cfgCreate(path):
     
     bgpath = input("Full background folder path (string):")
     size = int(input("Horizontal resolution (int):")), int(input("Vertical resolution (int):"))
-    highcontrast = ynbool(input("Make font high contrast?"))
+    highcontrast = ynbool(input("Make font high contrast? (y/n)"))
     autorun = ynbool(input("Run this script on startup? (Only works with .exe version) (y/n):"))
     unm = input("Username for Compass (string):")
     pwd = getpass("Password for Compass (string):")
