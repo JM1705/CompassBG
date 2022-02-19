@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from requests import get
 from re import search
 
-version = '2.3.1'
+version = '2.3.2'
 print('CompassBG | Version: '+str(version)+'\n')
 
 # Create configuration file if it doesn't exist yet

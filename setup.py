@@ -4,6 +4,8 @@ import os
 import sys
 import winshell
 from win32com.client import Dispatch
+from msvcrt import getch
+import stdiomask
 
 startup = winshell.startup()
 
@@ -26,12 +28,12 @@ def cfgCreate(path):
     print("More advanced settings can be accessed by opening the configuration file in Appdata")
     input("Press Enter to start")
     
-    bgpath = input("Full background folder path (string):")
-    size = int(input("Horizontal resolution (int):")), int(input("Vertical resolution (int):"))
-    highcontrast = ynbool(input("Make font high contrast? (y/n)"))
-    autorun = ynbool(input("Run this script on startup? (Only works with .exe version) (y/n):"))
-    unm = input("Username for Compass (string):")
-    pwd = getpass("Password for Compass (string):")
+    bgpath = input("Full background folder path (string): ")
+    size = int(input("Horizontal resolution (int):")), int(input("Vertical resolution (int): "))
+    highcontrast = ynbool(input("Make font high contrast? (y/n) "))
+    autorun = ynbool(input("Run this script on startup? (Only works with .exe version) (y/n): "))
+    unm = input("Username for Compass (string): ")
+    pwd = stdiomask.getpass(prompt= "Password for Compass (string): ", mask='*')
     
     fontsize = 16
     linespace = 20
