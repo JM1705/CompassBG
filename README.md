@@ -1,12 +1,16 @@
 # CompassBG
 Create and set a wallpaper with the Compass schedule for the day
 
-Dependencies:
+
+## **WARNING!!! THIS SCRIPT SAVES YOUR COMPASS LOGIN CREDENTIALS AS PLAIN TEXT IN A JSON CONFIGURATION FILE. DO NOT SHARE THIS FILE**
+
+
+## Dependencies:
 
 	Windows 10 (11 would probably work as well)
 
 
-Instructions:
+## Instructions:
 
 Step 1:
 	Create a directory with wallpaper images
@@ -35,6 +39,8 @@ Step 4 (Optional):
 		Task scheduler:
 		Trigger (Begin the task: At log on of any user)
 		Action (Start a program: Program/Script: "C:\Users\me\compassbgw.exe")
+
+## Other instructions
 
 
 To remove stored app information and cache:
