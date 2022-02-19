@@ -41,4 +41,4 @@ To remove stored app information and cache:
 	Run cleardata.exe
 
 To create the CompassBG directory manually:
-	Run manualsetup.py
+	Run manualsetup.exe
