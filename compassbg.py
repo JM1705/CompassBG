@@ -1,21 +1,21 @@
 import compass
 import setup
 from json import load
-from datetime import datetime
-from ctypes import windll
-from os import listdir, getenv, path
 from random import randint
-from PIL import Image, ImageDraw, ImageFont, ImageOps
-from requests import get
-from re import search
+from os import listdir, getenv, path
+from ctypes import windll
 
-version = '2.3.2'
+
+# Start of code
+version = '2.3.3'
 print('CompassBG | Version: '+str(version)+'\n')
+
 
 # Create configuration file if it doesn't exist yet
 appdata = getenv('LOCALAPPDATA') + '\CompassBG'
 if not path.exists(appdata+'\cfg.json'):
     setup.cfgCreate(appdata)
+
 
 # Get information from cfg file
 try:
@@ -33,6 +33,30 @@ try:
         highcontrast = cfg['high_contrast']
 except:
     raise KeyError('Config file corrupt or outdated, please run ClearData and then run CompassBG again')
+
+
+# Select background from folder
+print('Selecting background')
+if path.isfile(bgpath):
+    sbgpath = bgpath
+else:
+    bgs = []
+    for file in listdir(bgpath):
+        bgs.append(file)
+    sbgpath = bgpath+"\\"+bgs[randint(0, len(bgs)-1)]
+
+
+# Set temporary image as background
+print('Setting temporary image as background')
+windll.user32.SystemParametersInfoW(20, 0, sbgpath, 0)
+
+
+# Importing more liblaries
+from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from requests import get
+from re import search
+
 
 # Get time information
 now = datetime.now()
@@ -53,13 +77,23 @@ while not connected:
 
 # Get data from Compass
 print('Getting calender data from Compass')
-try:
-    c = compass.CompassAPI(unm, pwd)
-except KeyError:
-    raise ValueError('Password and username are incorrect, or the config file is corrupt fix the cfg.json file in appdata or run ClearData and then run CompassBG.')
-except:
-    raise ValueError('Compass threw an error, idk what happened lol, try again?')
-    quit()
+compTries = 0
+maxTries = 3
+compSuccess = False
+while compSuccess == False:
+    try:
+        c = compass.CompassAPI(unm, pwd)
+    except KeyError:
+        raise ValueError('Password and username are incorrect, or the config file is corrupt fix the cfg.json file in appdata or run ClearData and then run CompassBG.')
+        quit()
+    except:
+        compTries += 1
+        print('Could not get data from Compass. Tries left: '+str(maxTries-compTries))
+    else:
+        compSuccess = True
+    if compTries > maxTries:
+        raise ValueError('Compass returned more than '+str(maxTries)+' errors, exiting')
+        quit()
 events = c.get_calender_events_by_user(todayDate)
 lessons = []
 for i in events:
@@ -98,16 +132,11 @@ for i in lessons:
     print(tempstr)
     editText.append(tempstr)
 
-# Select background from folder
-print('Selecting background')
-bgs = []
-for file in listdir(bgpath):
-    bgs.append(file)
-sbgpath = bgpath+"\\"+bgs[randint(0, len(bgs)-1)]
 
 # Edit and save background image
 print('Editing background image with text')
 if highcontrast:
+    # High contrast text
     # Create alpha channel of text
     textalpha = Image.new('L', size)
     draw = ImageDraw.Draw(textalpha)
@@ -129,6 +158,7 @@ if highcontrast:
     img.save(appdata+r'\tempbg.png')
     
 else:
+    # Coloured text
     img = Image.open(sbgpath)
     img = img.resize(size, Image.ANTIALIAS)
     draw = ImageDraw.Draw(img)
@@ -138,8 +168,8 @@ else:
         draw.text(pos, editText[i], tuple(textcolour), font=font)
     img.save(appdata+r'\tempbg.png')
 
+
 # Set edited image as background
 print('Setting image as background')
 windll.user32.SystemParametersInfoW(20, 0, appdata+r'\tempbg.png', 0)
-
 print('Success')

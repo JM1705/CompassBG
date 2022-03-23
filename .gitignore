@@ -6,3 +6,5 @@ dist
 *.spec
 cleardata.py
 test.py
+compile.bat
+delet.bat
