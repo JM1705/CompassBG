@@ -1,5 +1,5 @@
 # CompassBG
-Create and set a wallpaper with the Compass schedule for the day
+Automatically set a wallpaper with the Compass schedule 
 
 
 ## WARNING!!! THIS SCRIPT SAVES YOUR COMPASS LOGIN CREDENTIALS AS PLAIN TEXT IN A JSON CONFIGURATION FILE. DO NOT SHARE THIS FILE.
