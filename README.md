@@ -36,9 +36,13 @@ Step 4 (Optional):
 	2. Run on log on in Task Scheduler (Windows prioritises this over startup so it is faster than option 1)
 		
 		(My settings for Task Scheduler)
-		Task scheduler:
-		Trigger (Begin the task: At log on of any user)
-		Action (Start a program: Program/Script: "C:\Users\me\compassbgw.exe")
+		Triggers:
+			At log on of any user
+			At 12:00 AM every day
+		Action: 
+			Start a program: Program/Script: "C:\location\compassbgw.exe"
+		Conditions:
+			None
 
 ## Other instructions
 
