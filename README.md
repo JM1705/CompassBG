@@ -1,5 +1,5 @@
 # CompassBG
-Create and set a wallpaper with the Compass schedule for the day
+Automatically set a wallpaper with the Compass schedule 
 
 
 ## WARNING!!! THIS SCRIPT SAVES YOUR COMPASS LOGIN CREDENTIALS AS PLAIN TEXT IN A JSON CONFIGURATION FILE. DO NOT SHARE THIS FILE.
@@ -36,9 +36,13 @@ Step 4 (Optional):
 	2. Run on log on in Task Scheduler (Windows prioritises this over startup so it is faster than option 1)
 		
 		(My settings for Task Scheduler)
-		Task scheduler:
-		Trigger (Begin the task: At log on of any user)
-		Action (Start a program: Program/Script: "C:\Users\me\compassbgw.exe")
+		Triggers:
+			At log on of any user
+			At 12:00 AM every day
+		Action: 
+			Start a program: Program/Script: "C:\location\compassbgw.exe"
+		Conditions:
+			None
 
 ## Other instructions
 
