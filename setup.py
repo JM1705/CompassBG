@@ -9,6 +9,8 @@ import stdiomask
 
 startup = winshell.startup()
 
+scriptDir = os.path.dirname(os.path.abspath(__file__))
+
 def ynbool(string):
     if string == 'y':
         return True
@@ -35,11 +37,13 @@ def cfgCreate(path):
     unm = input("Username for Compass (string): ")
     pwd = stdiomask.getpass(prompt= "Password for Compass (string): ", mask='*')
     
-    fontsize = 16
+    fontsize = 13
     linespace = 20
     startpos = [10, 10]
     textcolor = [255, 255, 255]
-    fontfile = "C:\\Windows\\Fonts\\calibrib.ttf"
+    fontfile = scriptDir+"\Inter-Bold.ttf"
+    titlemod = 8
+    titlespace = 2
     
     if not os.path.exists(path):
         os.makedirs(path)
@@ -60,6 +64,8 @@ def cfgCreate(path):
         cfg['text_colour'] = textcolor
         cfg['run_on_startup'] = autorun
         cfg['high_contrast'] = highcontrast
+        cfg['title_size_modifier'] = titlemod
+        cfg['title_spacing'] = titlespace
         json.dump(cfg, f, indent = '\t')
         
     if autorun == True and isExe:

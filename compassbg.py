@@ -1,13 +1,13 @@
 import compass
 import setup
-from json import load
+from json import load, dump
 from random import randint
 from os import listdir, getenv, path
 from ctypes import windll
 
 
 # Start of code
-version = '2.3.3'
+version = '2.4.0'
 print('CompassBG | Version: '+str(version)+'\n')
 
 
@@ -31,6 +31,20 @@ try:
         textcolour = cfg['text_colour']
         fontfile = cfg['font_file']
         highcontrast = cfg['high_contrast']
+        try:
+            titlemod = cfg['title_size_modifier']
+        except:
+            with open(appdata + '\cfg.json', 'w') as g:
+                cfg['title_size_modifier'] = 8
+                titlemod = 8
+                dump(cfg, g, indent = '\t')
+        try:
+            titleSpace = cfg['title_spacing']
+        except:
+            with open(appdata + '\cfg.json', 'w') as g:
+                cfg['title_spacing'] = 2
+                titlespace = 2
+                dump(cfg, g, indent = '\t')
 except:
     raise KeyError('Config file corrupt or outdated, please run ClearData and then run CompassBG again')
 
@@ -120,7 +134,7 @@ lessons = k
 
 # Create text for background editing
 print('Creating text for editing background')
-editText = [todayDate+': ']
+editText = []
 for i in lessons:
     tempstr = ''
     if len(i) == 3:
@@ -141,8 +155,10 @@ if highcontrast:
     textalpha = Image.new('L', size)
     draw = ImageDraw.Draw(textalpha)
     font = ImageFont.truetype(fontfile, fontsize)
+    titleFont = ImageFont.truetype(fontfile, fontsize+titlemod)
+    draw.text((startpos[0], startpos[1]), todayDate+': ', 255, font=titleFont)
     for i in range(len(editText)):
-        pos = startpos[0], startpos[1] +linespace * i
+        pos = startpos[0], startpos[1] +linespace * (i+1)+titlemod+titleSpace
         draw.text(pos, editText[i], 255, font=font)
 
     # Create negative of wallpaper    
@@ -163,8 +179,10 @@ else:
     img = img.resize(size, Image.ANTIALIAS)
     draw = ImageDraw.Draw(img)
     font = ImageFont.truetype(fontfile, fontsize)
+    titleFont = ImageFont.truetype(fontfile, fontsize+titlemod)
+    draw.text((startpos[0], startpos[1]), todayDate+'    Compass: ', tuple(textcolour), font=titleFont)
     for i in range(len(editText)):
-        pos = startpos[0], startpos[1] +linespace * i
+        pos = startpos[0], startpos[1] +linespace * (i+1)+titlemod+titleSpace
         draw.text(pos, editText[i], tuple(textcolour), font=font)
     img.save(appdata+r'\tempbg.png')
 
