@@ -4,10 +4,11 @@ from json import load, dump
 from random import randint
 from os import listdir, getenv, path
 from ctypes import windll
+from screeninfo import get_monitors
 
 
 # Start of code
-version = '2.4.0'
+version = '2.5.2'
 print('CompassBG | Version: '+str(version)+'\n')
 
 
@@ -24,7 +25,6 @@ try:
         pwd = cfg['password']
         unm = cfg['username']
         bgpath = cfg['background_path']
-        size = cfg['screen_resolution']
         fontsize = cfg['font_size']
         linespace = cfg['line_spacing']
         startpos = cfg['start_position']
@@ -45,9 +45,19 @@ try:
                 cfg['title_spacing'] = 2
                 titlespace = 2
                 dump(cfg, g, indent = '\t')
+        try:
+            maxTries = cfg['max_tries']
+        except:
+            with open(appdata + '\cfg.json', 'w') as g:
+                cfg['max_tries'] = 3
+                maxTries = 3
+                dump(cfg, g, indent = '\t')
 except:
     raise KeyError('Config file corrupt or outdated, please run ClearData and then run CompassBG again')
 
+# Finding Screen resolution
+monitors = get_monitors()
+size = [monitors[0].width, monitors[0].height]
 
 # Select background from folder
 print('Selecting background')
@@ -92,7 +102,7 @@ while not connected:
 # Get data from Compass
 print('Getting calender data from Compass')
 compTries = 0
-maxTries = 3
+maxTries
 compSuccess = False
 while compSuccess == False:
     try:
@@ -146,6 +156,8 @@ for i in lessons:
     print(tempstr)
     editText.append(tempstr)
 
+daysInWeek = ['Mon', 'Tues', 'Wednes', 'Thurs', 'Fri', 'Satur', 'Sun']
+titleText = todayDate+'    '+daysInWeek[datetime.today().weekday()]+'day: '
 
 # Edit and save background image
 print('Editing background image with text')
@@ -156,7 +168,7 @@ if highcontrast:
     draw = ImageDraw.Draw(textalpha)
     font = ImageFont.truetype(fontfile, fontsize)
     titleFont = ImageFont.truetype(fontfile, fontsize+titlemod)
-    draw.text((startpos[0], startpos[1]), todayDate+': ', 255, font=titleFont)
+    draw.text((startpos[0], startpos[1]), titleText, 255, font=titleFont)
     for i in range(len(editText)):
         pos = startpos[0], startpos[1] +linespace * (i+1)+titlemod+titleSpace
         draw.text(pos, editText[i], 255, font=font)
@@ -180,7 +192,7 @@ else:
     draw = ImageDraw.Draw(img)
     font = ImageFont.truetype(fontfile, fontsize)
     titleFont = ImageFont.truetype(fontfile, fontsize+titlemod)
-    draw.text((startpos[0], startpos[1]), todayDate+'    Compass: ', tuple(textcolour), font=titleFont)
+    draw.text((startpos[0], startpos[1]), titleText, tuple(textcolour), font=titleFont)
     for i in range(len(editText)):
         pos = startpos[0], startpos[1] +linespace * (i+1)+titlemod+titleSpace
         draw.text(pos, editText[i], tuple(textcolour), font=font)
