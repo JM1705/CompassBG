@@ -1,195 +1,130 @@
+# Script for displaying settings GUI, run by compassbg.py
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 from PyQt5 import uic
-from os import getenv, path, getcwd, makedirs
+from os import path, makedirs
 from json import load, dump
 from pathlib import Path
+from types import SimpleNamespace    
+from fileCodeTranslate import translateDict
 
-def loadDefaults():
-    global pwd, unm, bgpath, fontsize, linespace, autorun, startpos, fontfile, textcolour, highcontrast, titlemod, titlespace, maxTries, scriptPath
-    bgtemppath = str(Path.home() / "Pictures") + "\CompassBG"
-    if not path.exists(bgtemppath):
-        makedirs(bgtemppath)
+class runSettings:
+    def __init__(self, appdata):
+        app = QApplication(sys.argv)
+        self.ui = QMainWindow()
+        uic.loadUi('lightSettings.ui', self.ui)
 
-    with open('defaultCfg.json', 'r') as f:
-        cfg = load(f)
-        pwd = cfg['password']
-        unm = cfg['username']
-        bgpath = bgtemppath
-        fontsize = cfg['font_size']
-        linespace = cfg['line_spacing']
-        autorun = cfg['run_on_startup']
-        startpos = cfg['start_position']
-        textcolour = cfg['text_colour']
-        fontfile = scriptPath+'/Inter-Bold.ttf'
-        highcontrast = cfg['high_contrast']        
-        try:
-            titlemod = cfg['title_size_modifier']
-        except:
-            with open(appdata, 'w') as g:
-                cfg['title_size_modifier'] = 8
-                titlemod = 8
-                dump(cfg, g, indent = '\t')
-        try:
-            titlespace = cfg['title_spacing']
-        except:
-            with open(appdata, 'w') as g:
-                cfg['title_spacing'] = 2
-                titlespace = 2
-                dump(cfg, g, indent = '\t')
-        try:
-            maxTries = cfg['max_tries']
-        except:
-            with open(appdata, 'w') as g:
-                cfg['max_tries'] = 3
-                maxTries = 3
-                dump(cfg, g, indent = '\t')
-    refreshValues()
-    print('Defaults loaded')
+        # Connect buttons to functions
+        self.ui.findChild(QPushButton, 'BrowseBG').clicked.connect(self.BGDirSelect)
+        self.ui.findChild(QPushButton, 'BrowseFont').clicked.connect(self.FontSelect)
+        self.ui.findChild(QPushButton, 'BApply').clicked.connect(self.Apply)
+        self.ui.findChild(QPushButton, 'BDefault').clicked.connect(self.loadDefaults)
+
+        # Appdata including compassBG subfolder
+        self.appdata = appdata
+        self.cfgLoc = self.appdata + "\cfg.json"
+
+        # Load settings or current
+        if path.exists(self.cfgLoc):
+            self.loadCurrent()
+        else:
+            self.loadDefaults()
+
+        # Run app
+        self.ui.show()
+        app.exec_()
 
 
-def refreshValues():
-    global window
-    self = window
-    try:
-        self.findChild(QLineEdit, 'LEUnm').setText(unm)
-        self.findChild(QLineEdit, 'LEPwd').setText(pwd)
-        self.findChild(QLineEdit, 'LETxtCol').setText('%02x%02x%02x' % tuple(textcolour))
-        self.findChild(QSpinBox, 'SBFontSize').setValue(fontsize)
-        self.findChild(QSpinBox, 'SBLineSpace').setValue(linespace)
-        self.findChild(QSpinBox, 'SBStartX').setValue(startpos[0])
-        self.findChild(QSpinBox, 'SBStartY').setValue(startpos[1])
-        self.findChild(QSpinBox, 'SBTitleMod').setValue(titlemod)
-        self.findChild(QSpinBox, 'SBTitleSpace').setValue(titlespace)
-        self.findChild(QCheckBox, 'CBContrast').setChecked(highcontrast)
-        self.findChild(QCheckBox, 'CBStartup').setChecked(autorun)
-        self.findChild(QSpinBox, 'SBMaxTries').setValue(maxTries)
-    except:
-        loadDefaults()
-        self.findChild(QLineEdit, 'LEUnm').setText(unm)
-        self.findChild(QLineEdit, 'LEPwd').setText(pwd)
-        self.findChild(QLineEdit, 'LETxtCol').setText('%02x%02x%02x' % tuple(textcolour))
-        self.findChild(QSpinBox, 'SBFontSize').setValue(fontsize)
-        self.findChild(QSpinBox, 'SBLineSpace').setValue(linespace)
-        self.findChild(QSpinBox, 'SBStartX').setValue(startpos[0])
-        self.findChild(QSpinBox, 'SBStartY').setValue(startpos[1])
-        self.findChild(QSpinBox, 'SBTitleMod').setValue(titlemod)
-        self.findChild(QSpinBox, 'SBTitleSpace').setValue(titlespace)
-        self.findChild(QCheckBox, 'CBContrast').setChecked(highcontrast)
-        self.findChild(QCheckBox, 'CBStartup').setChecked(autorun)
-        self.findChild(QSpinBox, 'SBMaxTries').setValue(maxTries)
+    def loadCurrent(self):
+        # Load config file as dictionary
+        tempCfg = load(open(self.cfgLoc, 'r'))
 
+        # Change the names of keys so the code doesn't break
+        tempCfg = translateDict(tempCfg, "code")
 
-def BGDirSelect():
-    global bgpath
-    bgpath=QFileDialog.getExistingDirectory()
-    print(bgpath)
-    
-
-def FontSelect():
-    global fontfile
-    title = "Select Font"
-    qfd = QFileDialog()
-    path = "."
-    filter = "ttf(*.ttf)"
-    fontfile=QFileDialog.getOpenFileName(qfd, title, path, filter)[0]
-    print(fontfile)
-
-
-def Apply():
-    global bgpath, fontfile, window
-
-    self = window
-    unm = self.findChild(QLineEdit, 'LEUnm').text()
-    pwd = self.findChild(QLineEdit, 'LEPwd').text()
-    hextextcol = self.findChild(QLineEdit, 'LETxtCol').text()
-    lv = len(hextextcol)
-    textcolour = tuple(int(hextextcol[i:i+lv//3], 16) for i in range(0, lv, lv//3))
-    fontsize = self.findChild(QSpinBox, 'SBFontSize').value()
-    linespace = self.findChild(QSpinBox, 'SBLineSpace').value()
-    x=self.findChild(QSpinBox, 'SBStartX').value()
-    y=self.findChild(QSpinBox, 'SBStartY').value()
-    startpos = [x, y]
-    titlemod = self.findChild(QSpinBox, 'SBTitleMod').value()
-    titlespace = self.findChild(QSpinBox, 'SBTitleSpace').value()
-    highcontrast = self.findChild(QCheckBox, 'CBContrast').isChecked()
-    autorun = self.findChild(QCheckBox, 'CBStartup').isChecked()
-    maxTries = self.findChild(QSpinBox, 'SBMaxTries').value()
-
-    with open(cfgLoc, 'w') as f:
-        saveCfg = {}
-        saveCfg['username'] = unm
-        saveCfg['password'] = pwd
-        saveCfg['background_path'] = bgpath
-        saveCfg['font_size'] = fontsize
-        saveCfg['font_file'] = fontfile
-        saveCfg['line_spacing'] = linespace
-        saveCfg['start_position'] = startpos
-        saveCfg['text_colour'] = textcolour
-        saveCfg['run_on_startup'] = autorun
-        saveCfg['high_contrast'] = highcontrast
-        saveCfg['title_size_modifier'] = titlemod
-        saveCfg['title_spacing'] = titlespace
-        saveCfg['max_tries'] = maxTries
-        dump(saveCfg, f, indent = '\t')
-    print('Saved to cfg.json')
-
-
-
-class Ui(QMainWindow):
-    def __init__(self):
-        global bgButton
+        # Convert dictionary to namespace 
+        self.cfg = SimpleNamespace(**tempCfg)
         
-        super(Ui, self).__init__()
-        uic.loadUi('lightSettings.ui', self)
-
-        self.findChild(QPushButton, 'BrowseBG').clicked.connect(BGDirSelect)
-        self.findChild(QPushButton, 'BrowseFont').clicked.connect(FontSelect)
-        self.findChild(QPushButton, 'BApply').clicked.connect(Apply)
-        self.findChild(QPushButton, 'BDefault').clicked.connect(loadDefaults)
-
-        self.show()
+        self.refreshValues()
+        print("Current settings loaded from: "+self.cfgLoc)
 
 
-app = QApplication(sys.argv)
-window = Ui()
+    def loadDefaults(self):
+        bgtemppath = str(Path.home() / "Pictures") + "\CompassBG"
+        if not path.exists(bgtemppath):
+            makedirs(bgtemppath)
+            print("Created temporary background images path in: "+bgtemppath)
 
-scriptPath = getcwd()
-print(scriptPath)
+        # Load config file as dictionary
+        tempCfg = load(open('defaultCfg.json', 'r'))
+        
+        # Change the names of keys so the code doesn't break
+        tempCfg = translateDict(tempCfg, "code")
 
-bgpath = ""
-bgButton = []
-fontfile = ""
-fontButton = []
-apdLoc = appdata = getenv('LOCALAPPDATA') + '\CompassBG'
-cfgLoc = appdata = getenv('LOCALAPPDATA') + '\CompassBG\cfg.json'
+        # Convert dictionary to namespace 
+        self.cfg = SimpleNamespace(**tempCfg)
+
+        self.refreshValues()
+        print('Defaults loaded')
+    
+    def refreshValues(self):
+        self.ui.findChild(QLineEdit, 'LEUnm').setText(self.cfg.unm)
+        self.ui.findChild(QLineEdit, 'LEPwd').setText(self.cfg.pwd)
+        self.ui.findChild(QLineEdit, 'LETxtCol').setText('%02x%02x%02x' % tuple(self.cfg.textcolour))
+        self.ui.findChild(QSpinBox, 'SBFontSize').setValue(self.cfg.fontsize)
+        self.ui.findChild(QSpinBox, 'SBLineSpace').setValue(self.cfg.linespace)
+        self.ui.findChild(QSpinBox, 'SBStartX').setValue(self.cfg.startpos[0])
+        self.ui.findChild(QSpinBox, 'SBStartY').setValue(self.cfg.startpos[1])
+        self.ui.findChild(QSpinBox, 'SBTitleMod').setValue(self.cfg.titlemod)
+        self.ui.findChild(QSpinBox, 'SBTitleSpace').setValue(self.cfg.titlespace)
+        self.ui.findChild(QCheckBox, 'CBContrast').setChecked(self.cfg.highcontrast)
+        self.ui.findChild(QCheckBox, 'CBStartup').setChecked(self.cfg.autorun)
+        self.ui.findChild(QSpinBox, 'SBMaxTries').setValue(self.cfg.maxTries)
+        print("Refreshed values in UI")
 
 
-try:
-    if path.exists(cfgLoc):
-        with open(cfgLoc, 'r') as f:
-            cfg = load(f)
-            pwd = cfg['password']
-            unm = cfg['username']
-            bgpath = cfg['background_path']
-            fontsize = cfg['font_size']
-            linespace = cfg['line_spacing']
-            autorun = cfg['run_on_startup']
-            startpos = cfg['start_position']
-            textcolour = cfg['text_colour']
-            fontfile = cfg['font_file']
-            highcontrast = cfg['high_contrast']
-            titlemod = cfg['title_size_modifier']
-            titlespace = cfg['title_spacing']
-            maxTries = cfg['max_tries']
-    else:
-        makedirs(apdLoc)
-        loadDefaults()
-except:
-    loadDefaults()
+    def BGDirSelect(self):
+        self.cfg.bgpath=QFileDialog.getExistingDirectory()
+        print("New background path selected: "+self.cfg.bgpath)
 
-refreshValues()
 
-app.exec_()
+    def FontSelect(self):
+        # Popup window for selecting font
+        title = "Select Font"
+        qfd = QFileDialog()
+        path = "."
+        filter = "ttf(*.ttf)"
+        self.cfg.fontfile=QFileDialog.getOpenFileName(qfd, title, path, filter)[0]
+        print("New font file selected: "+self.cfg.fontfile)
 
+
+    def Apply(self):
+        # Fetch information from input fields in ui
+        self.cfg.unm = self.ui.findChild(QLineEdit, 'LEUnm').text()
+        self.cfg.pwd = self.ui.findChild(QLineEdit, 'LEPwd').text()
+        self.cfg.fontsize = self.ui.findChild(QSpinBox, 'SBFontSize').value()
+        self.cfg.linespace = self.ui.findChild(QSpinBox, 'SBLineSpace').value()
+        self.cfg.titlemod = self.ui.findChild(QSpinBox, 'SBTitleMod').value()
+        self.cfg.titlespace = self.ui.findChild(QSpinBox, 'SBTitleSpace').value()
+        self.cfg.highcontrast = self.ui.findChild(QCheckBox, 'CBContrast').isChecked()
+        self.cfg.autorun = self.ui.findChild(QCheckBox, 'CBStartup').isChecked()
+        self.cfg.maxTries = self.ui.findChild(QSpinBox, 'SBMaxTries').value()
+        
+        # Hex text colour to rgb
+        hextextcol = self.ui.findChild(QLineEdit, 'LETxtCol').text()
+        lv = len(hextextcol)
+        self.cfg.textcolour = tuple(int(hextextcol[i:i+lv//3], 16) for i in range(0, lv, lv//3))
+
+        # Combine x and y values of starting position
+        x=self.ui.findChild(QSpinBox, 'SBStartX').value()
+        y=self.ui.findChild(QSpinBox, 'SBStartY').value()
+        self.cfg.startpos = [x, y]
+
+        # Save self.cfg to settings file
+        
+        # Change the names of keys so the code doesn't break
+        tempCfg = translateDict(vars(self.cfg), "file")
+
+        dump(tempCfg, open(self.cfgLoc, 'w'), indent = '\t')
+        print('Saved settings to: '+self.cfgLoc)

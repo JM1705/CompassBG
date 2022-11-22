@@ -1,0 +1,21 @@
+{
+	"username": "my username",
+	"password": "my password",
+	"background_path": "C:\\my background images",
+	"font_size": 13,
+	"font_file": "C:\\myfont.ttf",
+	"line_spacing": 20,
+	"start_position": [
+		10,
+		10
+	],
+	"text_colour": [
+		255,
+		255,
+		255
+	],
+	"run_on_startup": false,
+	"high_contrast": true,
+	"title_size_modifier": 8,
+	"title_spacing": 2
+}

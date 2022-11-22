@@ -130,40 +130,41 @@ class Ui(QMainWindow):
         self.show()
 
 
-app = QApplication(sys.argv)
-window = Ui()
+def startWindow():
+    global pwd, unm, bgpath, fontsize, linespace, autorun, startpos, fontfile, textcolour, highcontrast, titlemod, titlespace, maxTries, window, appdata, bgButton, fontButton, cfgLoc
+    app = QApplication(sys.argv)
+    window = Ui()
 
 
-bgpath = ""
-bgButton = []
-fontfile = ""
-fontButton = []
-cfgLoc = appdata = getenv('LOCALAPPDATA') + '\CompassBG\cfg.json'
+    bgpath = ""
+    bgButton = []
+    fontfile = ""
+    fontButton = []
+    cfgLoc = appdata = getenv('LOCALAPPDATA') + '\CompassBG\cfg.json'
 
 
-try:
-    if path.exists(cfgLoc):
-        with open(cfgLoc, 'r') as f:
-            cfg = load(f)
-            pwd = cfg['password']
-            unm = cfg['username']
-            bgpath = cfg['background_path']
-            fontsize = cfg['font_size']
-            linespace = cfg['line_spacing']
-            autorun = cfg['run_on_startup']
-            startpos = cfg['start_position']
-            textcolour = cfg['text_colour']
-            fontfile = cfg['font_file']
-            highcontrast = cfg['high_contrast']
-            titlemod = cfg['title_size_modifier']
-            titlespace = cfg['title_spacing']
-            maxTries = cfg['max_tries']
-    else:
+    try:
+        if path.exists(cfgLoc):
+            with open(cfgLoc, 'r') as f:
+                cfg = load(f)
+                pwd = cfg['password']
+                unm = cfg['username']
+                bgpath = cfg['background_path']
+                fontsize = cfg['font_size']
+                linespace = cfg['line_spacing']
+                autorun = cfg['run_on_startup']
+                startpos = cfg['start_position']
+                textcolour = cfg['text_colour']
+                fontfile = cfg['font_file']
+                highcontrast = cfg['high_contrast']
+                titlemod = cfg['title_size_modifier']
+                titlespace = cfg['title_spacing']
+                maxTries = cfg['max_tries']
+        else:
+            loadDefaults()
+    except:
         loadDefaults()
-except:
-    loadDefaults()
 
-refreshValues()
+    refreshValues()
 
-app.exec_()
-
+    app.exec_()

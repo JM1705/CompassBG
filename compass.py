@@ -1,3 +1,4 @@
+# Script for fetching information from the Compass website written by Mr Belluzzo (with some code by me added at the end) run by compassbg.py
 # from datetime import datetime
 # import json
 import logging

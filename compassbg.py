@@ -1,208 +1,220 @@
-try:
-    import compass
-    from json import load, dump
-    from random import randint
-    from os import listdir, getenv, path
-    from ctypes import windll
-    from screeninfo import get_monitors
+# Main CompassBG script
+import compass
+from json import load, dump
+from random import randint
+from os import listdir, getenv, path
+from ctypes import windll
+from screeninfo import get_monitors
+import compassBGQT as CBSettings
+from types import SimpleNamespace
+from fileCodeTranslate import translateDict
 
 
-    # Start of code
-    version = '2.6.0'
-    print('CompassBG | Version: '+str(version)+'\n')
+# Start of code
+version = '2.7.0'
+print('CompassBG | Version: '+str(version)+'\n')
 
 
-    # Create configuration file if it doesn't exist yet
-    appdata = getenv('LOCALAPPDATA') + '\CompassBG'
-    if not path.exists(appdata+'\cfg.json'):
-        import compassBGQT
+# Create configuration file if it doesn't exist yet
+appdata = getenv('LOCALAPPDATA') + '\CompassBG'
+cfgLoc = appdata + "\cfg.json"
+if not path.exists(appdata+'\cfg.json'):
+    CBSettings.runSettings(appdata)
+
+# Get information from cfg file
+
+# Load config file as dictionary
+tempCfg = load(open(cfgLoc, 'r'))
+
+# Change the names of keys so the code doesn't break
+tempCfg = translateDict(tempCfg, "code")
+
+# Convert dictionary to namespace 
+cfg = SimpleNamespace(**tempCfg)
+
+# Finding Screen resolution
+monitors = get_monitors()
+size = [monitors[0].width, monitors[0].height]
+
+# Select background from folder
+print('Selecting background')
+if path.isfile(cfg.bgpath):
+    sbgpath = cfg.bgpath
+else:
+    bgs = []
+    for file in listdir(cfg.bgpath):
+        bgs.append(file)
+    sbgpath = cfg.bgpath+"\\"+bgs[randint(0, len(bgs)-1)]
 
 
-    # Get information from cfg file
+# Set temporary image as background
+print('Setting temporary image as background')
+windll.user32.SystemParametersInfoW(20, 0, sbgpath, 0)
+
+
+# Importing more liblaries
+from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
+from requests import get
+from re import search
+from dateutil import tz, parser
+    
+# Defining function    
+def compassTimeTo24h(timeStr):
+    from_zone = tz.tzutc()
+    to_zone = tz.tzlocal()
+    utc = parser.parse(timeStr.replace('Z', ''))
+    utc = utc.replace(tzinfo=from_zone)
+    central = utc.astimezone(to_zone)
+    return central.strftime('%H:%M')
+
+
+# Get time information
+now = datetime.now()
+todayDate = now.strftime("%Y-%m-%d")
+print(todayDate)
+
+# Wait for internet connection
+print("Waiting for internet connection.")
+connected = False
+while not connected:
     try:
-        with open(appdata + '\cfg.json', 'r') as f:
-            cfg = load(f)
-            pwd = cfg['password']
-            unm = cfg['username']
-            bgpath = cfg['background_path']
-            fontsize = cfg['font_size']
-            linespace = cfg['line_spacing']
-            startpos = cfg['start_position']
-            textcolour = cfg['text_colour']
-            fontfile = cfg['font_file']
-            highcontrast = cfg['high_contrast']
-            try:
-                titlemod = cfg['title_size_modifier']
-            except:
-                with open(appdata + '\cfg.json', 'w') as g:
-                    cfg['title_size_modifier'] = 8
-                    titlemod = 8
-                    dump(cfg, g, indent = '\t')
-            try:
-                titleSpace = cfg['title_spacing']
-            except:
-                with open(appdata + '\cfg.json', 'w') as g:
-                    cfg['title_spacing'] = 2
-                    titlespace = 2
-                    dump(cfg, g, indent = '\t')
-            try:
-                maxTries = cfg['max_tries']
-            except:
-                with open(appdata + '\cfg.json', 'w') as g:
-                    cfg['max_tries'] = 3
-                    maxTries = 3
-                    dump(cfg, g, indent = '\t')
+        request = get('https://www.google.com', timeout=1)
+        print("Connected to the internet")
+        connected = True
     except:
-        raise KeyError('Config file corrupt or outdated, please run ClearData and then run CompassBG again')
+        pass
 
-    # Finding Screen resolution
-    monitors = get_monitors()
-    size = [monitors[0].width, monitors[0].height]
 
-    # Select background from folder
-    print('Selecting background')
-    if path.isfile(bgpath):
-        sbgpath = bgpath
+# Get data from Compass
+print('Getting calender data from Compass')
+compTries = 0
+compSuccess = False
+while compSuccess == False:
+    try:
+        c = compass.CompassAPI(cfg.unm, cfg.pwd)
+    except KeyError:
+        raise ValueError('Password and username are incorrect, or the config file is corrupt fix the cfg.json file in appdata or run ClearData and then run CompassBG.')
+        quit()
+    except:
+        compTries += 1
+        print('Could not get data from Compass. Tries left: '+str(cfg.maxTries-compTries))
     else:
-        bgs = []
-        for file in listdir(bgpath):
-            bgs.append(file)
-        sbgpath = bgpath+"\\"+bgs[randint(0, len(bgs)-1)]
+        compSuccess = True
+    if compTries > cfg.maxTries:
+        raise ValueError('Compass returned more than '+str(cfg.maxTries)+' errors, exiting')
+events = c.get_calender_events_by_user(todayDate)
+
+lessons = []
+lessonTimes = []
+for i in events:
+    eventInfo = i['longTitleWithoutTime'].split(' - ')
+    lessons.append(eventInfo)
+    times = []
+    times.append(compassTimeTo24h(i['start']))
+    times.append(compassTimeTo24h(i['finish']))
+    lessonTimes.append(times)
+# lessons = sorted(lessons)
 
 
-    # Set temporary image as background
-    print('Setting temporary image as background')
-    windll.user32.SystemParametersInfoW(20, 0, sbgpath, 0)
+# Fix strikethrough
+k = []
+for i in lessons:
+    l = []
+    for j in i:
+        if 'strike' in j:
+            strike = '<strike>(.*?)</strike>&nbsp;'
+            strikeStr = search(strike, j).group(1)
+            striked = strikeStr + ' (substituted by'
+            replaceStr = '<strike>'+strikeStr+'</strike>&nbsp;'
+            j = j.replace(replaceStr, striked) + ')'
+        l.append(j)
+    k.append(l)
+lessons = k
 
-
-    # Importing more liblaries
-    from datetime import datetime
-    from PIL import Image, ImageDraw, ImageFont, ImageOps
-    from requests import get
-    from re import search
-
-
-    # Get time information
-    now = datetime.now()
-    todayDate = now.strftime("%Y-%m-%d")
-    print(todayDate)
-
-    # Wait for internet connection
-    print("Waiting for internet connection.")
-    connected = False
-    while not connected:
-        try:
-            request = get('https://www.google.com', timeout=1)
-            print("Connected to the internet")
-            connected = True
-        except:
-            pass
-
-
-    # Get data from Compass
-    print('Getting calender data from Compass')
-    compTries = 0
-    maxTries
-    compSuccess = False
-    while compSuccess == False:
-        try:
-            c = compass.CompassAPI(unm, pwd)
-        except KeyError:
-            raise ValueError('Password and username are incorrect, or the config file is corrupt fix the cfg.json file in appdata or run ClearData and then run CompassBG.')
-            quit()
-        except:
-            compTries += 1
-            print('Could not get data from Compass. Tries left: '+str(maxTries-compTries))
-        else:
-            compSuccess = True
-        if compTries > maxTries:
-            raise ValueError('Compass returned more than '+str(maxTries)+' errors, exiting')
-            quit()
-    events = c.get_calender_events_by_user(todayDate)
-    lessons = []
-    for i in events:
-        eventInfo = i['longTitleWithoutTime'].split(' - ')
-        lessons.append(eventInfo)
-    lessons = sorted(lessons)
-
-
-    # Fix strikethrough
-    k = []
-    for i in lessons:
-        l = []
-        for j in i:
-            if 'strike' in j:
-                strike = '<strike>(.*?)</strike>&nbsp;'
-                strikeStr = search(strike, j).group(1)
-                striked = strikeStr + ' (substituted by'
-                replaceStr = '<strike>'+strikeStr+'</strike>&nbsp;'
-                j = j.replace(replaceStr, striked) + ')'
-            l.append(j)
-        k.append(l)
-    lessons = k
-        
-
-    # Create text for background editing
-    print('Creating text for editing background')
-    editText = []
-    for i in lessons:
-        tempstr = ''
-        if len(i) == 3:
-            tempstr = '[?] - '+i[0]+' - '+i[1]+' - '+i[2]
-        else:
-            tempstr += '['+i[0]+']'
-            for j in range(len(i)-1):
-                tempstr += ' - '+i[j+1]
-        print(tempstr)
-        editText.append(tempstr)
-
-    daysInWeek = ['Mon', 'Tues', 'Wednes', 'Thurs', 'Fri', 'Satur', 'Sun']
-    titleText = todayDate+'    '+daysInWeek[datetime.today().weekday()]+'day: '
-
-    # Edit and save background image
-    print('Editing background image with text')
-    if highcontrast:
-        # High contrast text
-        # Create alpha channel of text
-        textalpha = Image.new('L', size)
-        draw = ImageDraw.Draw(textalpha)
-        font = ImageFont.truetype(fontfile, fontsize)
-        titleFont = ImageFont.truetype(fontfile, fontsize+titlemod)
-        draw.text((startpos[0], startpos[1]), titleText, 255, font=titleFont)
-        for i in range(len(editText)):
-            pos = startpos[0], startpos[1] +linespace * (i+1)+titlemod+titleSpace
-            draw.text(pos, editText[i], 255, font=font)
-
-        # Create negative of wallpaper    
-        img = Image.open(sbgpath)
-        img = img.resize(size, Image.ANTIALIAS)
-        negimg = ImageOps.invert(img)
-        negimg.putalpha(textalpha)
-        
-        # Overlay negative on original with alpha channel of text
-        img = img.convert("RGBA")
-        negimg = negimg.convert("RGBA")
-        img = Image.alpha_composite(img, negimg)
-        img.save(appdata+r'\tempbg.png')
-        
+# Create text for background editing
+print('Creating text for editing background')
+editText = []
+for inum in range(len(lessons)):
+    i = lessons[inum]
+    t = lessonTimes[inum]
+    # This is a temporary timestamp for sorting
+    tempstr = t[0]+'-'+t[1]
+    if len(i) == 3:
+        tempstr +='[?] '+' - '+i[0]+' - '+i[1]+' - '+i[2]
     else:
-        # Coloured text
-        img = Image.open(sbgpath)
-        img = img.resize(size, Image.ANTIALIAS)
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.truetype(fontfile, fontsize)
-        titleFont = ImageFont.truetype(fontfile, fontsize+titlemod)
-        draw.text((startpos[0], startpos[1]), titleText, tuple(textcolour), font=titleFont)
-        for i in range(len(editText)):
-            pos = startpos[0], startpos[1] +linespace * (i+1)+titlemod+titleSpace
-            draw.text(pos, editText[i], tuple(textcolour), font=font)
-        img.save(appdata+r'\tempbg.png')
+        tempstr += '['+i[0]+']'
+        for j in range(len(i)-1):
+            tempstr += ' - '+i[j+1]
+    print(tempstr)
+    editText.append(tempstr)
+editText = sorted(editText)
+editTimes = []
+for i in lessonTimes:
+    editTimes.append(i[0]+'-'+i[1])
+editTimes = sorted(editTimes)
+
+# Remove temporary timestamp from editText
+for i in range(len(editText)):
+    editText[i] = editText[i].replace(editTimes[i], '')
 
 
-    # Set edited image as background
-    print('Setting image as background')
-    windll.user32.SystemParametersInfoW(20, 0, appdata+r'\tempbg.png', 0)
-    print('Success')
-except Exception as e: 
-    print(e)
-    input('Press any key to exit')
+daysInWeek = ['Mon', 'Tues', 'Wednes', 'Thurs', 'Fri', 'Satur', 'Sun']
+titleText = todayDate+'    '+daysInWeek[datetime.today().weekday()]+'day: '
+
+# Edit and save background image
+print('Editing background image with text')
+if cfg.highcontrast:
+    # High contrast text
+    # Create alpha channel of text
+    textalpha = Image.new('L', size)
+    draw = ImageDraw.Draw(textalpha)
+    font = ImageFont.truetype(cfg.fontfile, cfg.fontsize)
+    titleFont = ImageFont.truetype(cfg.fontfile, cfg.fontsize+cfg.titlemod)
+    draw.text((cfg.startpos[0], cfg.startpos[1]), titleText, 255, font=titleFont)
+    
+    for i in range(len(editTimes)):
+        pos = cfg.startpos[0], cfg.startpos[1] +cfg.linespace * (i+1)+cfg.titlemod+cfg.titlespace
+        draw.text(pos, editTimes[i], 255, font=font)
+
+    for i in range(len(editText)):
+        pos = cfg.startpos[0]+9*cfg.fontsize+10, cfg.startpos[1] +cfg.linespace * (i+1)+cfg.titlemod+cfg.titlespace
+        draw.text(pos, editText[i], 255, font=font)
+
+    # Create negative of wallpaper    
+    img = Image.open(sbgpath)
+    img = img.resize(size, Image.Resampling.LANCZOS)
+    negimg = ImageOps.invert(img)
+    negimg = negimg.filter(ImageFilter.BoxBlur(12))
+    negimg.putalpha(textalpha)
+    
+    # Overlay negative on original with alpha channel of text
+    img = img.convert("RGBA")
+    negimg = negimg.convert("RGBA")
+    img = Image.alpha_composite(img, negimg)
+    img.save(appdata+r'\tempbg.png')
+    
+else:
+    # Coloured text
+    img = Image.open(sbgpath)
+    img = img.resize(size, Image.Resampling.LANCZOS)
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(cfg.fontfile, cfg.fontsize)
+    titleFont = ImageFont.truetype(cfg.fontfile, cfg.fontsize+cfg.titlemod)
+    draw.text((cfg.startpos[0], cfg.startpos[1]), titleText, tuple(cfg.textcolour), font=titleFont)
+    
+    for i in range(len(editTimes)):
+        pos = cfg.startpos[0], cfg.startpos[1] +cfg.linespace * (i+1)+cfg.titlemod+cfg.titlespace
+        draw.text(pos, editTimes[i], tuple(cfg.textcolour), font=font)
+
+    for i in range(len(editText)):
+        pos = cfg.startpos[0]+11*cfg.fontsize/1.7+10, cfg.startpos[1] +cfg.linespace * (i+1)+cfg.titlemod+cfg.titlespace
+        draw.text(pos, editText[i], tuple(cfg.textcolour), font=font)
+
+    img.save(appdata+r'\tempbg.png')
+
+
+# Set edited image as background
+print('Setting image as background')
+windll.user32.SystemParametersInfoW(20, 0, appdata+r'\tempbg.png', 0)
+print('Success')

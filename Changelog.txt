@@ -1,0 +1,4 @@
+2.7.0
+- Settings UI
+- Blurred text on high contrast
+- Time of subject
