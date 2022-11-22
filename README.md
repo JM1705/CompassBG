@@ -4,6 +4,7 @@ Automatically set a wallpaper with the Compass schedule
 
 ## WARNING!!! THIS SCRIPT SAVES YOUR COMPASS LOGIN CREDENTIALS AS PLAIN TEXT IN A JSON CONFIGURATION FILE. DO NOT SHARE THIS FILE.
 
+## As the configuration file is not backwards compatible as of now, you might want to delete it through cleardata.exe if CompassBG.exe is giving errors.
 
 ## Dependencies:
 
