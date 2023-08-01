@@ -1,6 +1,7 @@
 # CompassBG
 Automatically set a wallpaper with the Compass schedule 
 
+[DEPRECATED] Please move to Azimuth (https://github.com/JM1705/Azimuth)
 
 ## WARNING!!! THIS SCRIPT SAVES YOUR COMPASS LOGIN CREDENTIALS AS PLAIN TEXT IN A JSON CONFIGURATION FILE. DO NOT SHARE THIS FILE.
 
